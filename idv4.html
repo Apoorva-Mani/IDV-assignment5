@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Defense Battle Arena</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0e27;
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 3.5em;
+            background: linear-gradient(45deg, #ff006e, #fb5607, #ffbe0b, #8338ec);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 0, 110, 0.5);
+            margin-bottom: 10px;
+            font-weight: 900;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #8ab4f8;
+            margin-bottom: 20px;
+        }
+
+        .story-text {
+            font-size: 1em;
+            color: #aaa;
+            max-width: 800px;
+            margin: 0 auto 30px;
+            line-height: 1.6;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 60px;
+            align-items: center;
+            margin-top: 40px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .chart-section {
+            justify-self: end;
+        }
+
+        .insights-section {
+            min-width: 300px;
+            max-width: 450px;
+            justify-self: start;
+            align-self: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: rgba(131, 56, 236, 0.2);
+            border: 2px solid #8338ec;
+            color: #fff;
+            border-radius: 25px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            background: #8338ec;
+            box-shadow: 0 0 20px rgba(131, 56, 236, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .btn.active {
+            background: #8338ec;
+            box-shadow: 0 0 20px rgba(131, 56, 236, 0.8);
+        }
+
+        #chart {
+            display: flex;
+            justify-content: center;
+            margin: 40px 0;
+        }
+
+        .defense-arc {
+            fill: none;
+            stroke-width: 3;
+            cursor: pointer;
+            transition: all 0.3s;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+        }
+
+        .defense-arc:hover {
+            stroke-width: 5;
+            filter: drop-shadow(0 0 15px currentColor);
+        }
+
+        .defense-separator {
+            stroke: rgba(255, 255, 255, 0.3);
+            stroke-width: 2;
+        }
+
+        .attack-line {
+            stroke-width: 2;
+            fill: none;
+            opacity: 0.6;
+            stroke-dasharray: 5, 5;
+            animation: dash 20s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -1000;
+            }
+        }
+
+        .attack-dot {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .defense-label {
+            font-size: 13px;
+            font-weight: bold;
+            fill: #fff;
+            text-anchor: middle;
+            pointer-events: none;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.9), 0 0 4px rgba(0, 0, 0, 0.9);
+        }
+
+        .attack-label {
+            font-size: 13px;
+            fill: #fff;
+            pointer-events: none;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.9);
+            font-weight: 600;
+        }
+
+        .penetration-indicator {
+            transition: all 0.3s;
+        }
+
+        .value-label {
+            font-size: 11px;
+            fill: #fff;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.9);
+        }
+
+        .center-score {
+            font-size: 48px;
+            font-weight: bold;
+            fill: #fff;
+            text-anchor: middle;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+        }
+
+        .center-label {
+            font-size: 14px;
+            fill: #aaa;
+            text-anchor: middle;
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 15px 20px;
+            background: rgba(10, 14, 39, 0.95);
+            border: 2px solid #8338ec;
+            border-radius: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 13px;
+            max-width: 300px;
+            box-shadow: 0 0 20px rgba(131, 56, 236, 0.5);
+            z-index: 1000;
+        }
+
+        .tooltip-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #8ab4f8;
+        }
+
+        .tooltip-stat {
+            margin: 4px 0;
+            color: #ccc;
+        }
+
+        .legend-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 15px;
+            border-radius: 3px;
+        }
+
+        .battle-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stat-card {
+            background: rgba(131, 56, 236, 0.1);
+            border: 2px solid #8338ec;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            background: rgba(131, 56, 236, 0.2);
+            box-shadow: 0 0 20px rgba(131, 56, 236, 0.5);
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff006e, #8338ec);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-panel {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 4px solid #8338ec;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-panel h3 {
+            color: #8ab4f8;
+            margin-bottom: 10px;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 8px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .data-cell {
+            padding: 8px;
+            background: rgba(131, 56, 236, 0.1);
+            border: 1px solid rgba(131, 56, 236, 0.3);
+            border-radius: 6px;
+            font-size: 0.85em;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .data-cell:hover {
+            background: rgba(131, 56, 236, 0.3);
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(131, 56, 236, 0.5);
+        }
+
+        .data-cell-attack {
+            color: #8ab4f8;
+            font-weight: bold;
+            font-size: 0.75em;
+            margin-bottom: 4px;
+        }
+
+        .data-cell-defense {
+            color: #aaa;
+            font-size: 0.7em;
+        }
+
+        .data-cell-value {
+            color: #fff;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .matrix-container {
+            margin-top: 20px;
+            overflow-x: auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .matrix-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 2px;
+        }
+
+        .matrix-table th {
+            background: rgba(131, 56, 236, 0.3);
+            padding: 10px 8px;
+            font-size: 0.85em;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .matrix-table td {
+            padding: 8px;
+            text-align: center;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+
+        .matrix-table td:hover {
+            transform: scale(1.15);
+            z-index: 5;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .matrix-table tr td:first-child {
+            position: sticky;
+            left: 0;
+            background: rgba(10, 14, 39, 0.95);
+            font-weight: bold;
+            text-align: left;
+            font-size: 0.75em;
+        }
+
+        .mode-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="stars" id="stars"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>⚔️ AI DEFENSE BATTLE ARENA ⚔️</h1>
+            <p class="subtitle">A Radial Story of Machine Learning Under Siege</p>
+            <p class="story-text">
+                In the center stands the AI fortress. Nine defense shields protect it from various adversarial attacks 
+                launching from the perimeter. The visualization maps the eternal struggle between adversarial attacks and AI defense mechanisms in a single, intuitive radial display.
+            </p>
+        </div>
+
+        <div class="mode-toggle">
+            <button class="btn active" id="interactiveMode">🎯 Interactive View</button>
+            <button class="btn" id="matrixMode">📊 Full Data Matrix</button>
+			<button class="btn" id="resetBtn">Reset All</button>
+        </div>
+
+        <div class="main-content">
+            <div class="chart-section">
+                <div id="chart"></div>
+            </div>
+
+            <div class="insights-section">
+                <div class="info-panel">
+                    <h3>🎯 Battle Insights</h3>
+                    <p id="insightText">Click on any defense shield or attack node to reveal the battle dynamics...</p>
+                    <div id="dataGrid" class="data-grid" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="battle-stats">
+            <div class="stat-card">
+                <div class="stat-value" id="avgScore">--</div>
+                <div class="stat-label">Avg Defense Power</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="bestDefense">--</div>
+                <div class="stat-label">Strongest Shield</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="worstAttack">--</div>
+                <div class="stat-label">Deadliest Attack</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="survivalRate">--</div>
+                <div class="stat-label">Survival Rate</div>
+            </div>
+        </div>
+
+        <div class="matrix-container" id="matrixContainer">
+            <h3 style="color: #8ab4f8; margin-bottom: 15px;">📊 Complete Data Matrix - All 225 Values</h3>
+            <p style="color: #aaa; margin-bottom: 15px;">Hover over any cell to see details. Click to highlight connections in the radial view above.</p>
+            <table class="matrix-table" id="matrixTable"></table>
+        </div>
+
+        <div class="legend-container">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(90deg, #ff006e, #ff4d8f);"></div>
+                <span>0-40%: Critical Breach</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(90deg, #ffbe0b, #fb5607);"></div>
+                <span>40-70%: Moderate Defense</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(90deg, #06ffa5, #8338ec);"></div>
+                <span>70-100%: Fortress Strong</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Generate starfield
+        const starsContainer = document.getElementById('stars');
+        for (let i = 0; i < 100; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            star.style.left = Math.random() * 100 + '%';
+            star.style.top = Math.random() * 100 + '%';
+            star.style.animationDelay = Math.random() * 3 + 's';
+            starsContainer.appendChild(star);
+        }
+
+        // Data
+        const rawData = [
+            {attack: "No Attack", ERM: 94.85, DA: 94.21, PGDT: 84.38, TRADES: 80.42, MART: 81.54, RS: 89.45, IBP: 48.40, PRL: 93.82, TandT: 94.23},
+            {attack: "TIFGSM", ERM: 35.10, DA: 33.00, PGDT: 65.70, TRADES: 62.90, MART: 69.10, RS: 45.40, IBP: 40.20, PRL: 34.00, TandT: 92.80},
+            {attack: "MIFGSM", ERM: 0.00, DA: 0.00, PGDT: 50.90, TRADES: 51.90, MART: 50.50, RS: 5.80, IBP: 38.10, PRL: 0.00, TandT: 92.80},
+            {attack: "DIFGSM", ERM: 1.00, DA: 0.00, PGDT: 51.75, TRADES: 50.50, MART: 53.60, RS: 4.10, IBP: 38.10, PRL: 3.10, TandT: 92.80},
+            {attack: "VMIFGSM", ERM: 0.00, DA: 0.00, PGDT: 51.10, TRADES: 50.90, MART: 51.90, RS: 4.10, IBP: 38.10, PRL: 0.00, TandT: 93.90},
+            {attack: "TPGD", ERM: 38.10, DA: 39.20, PGDT: 69.30, TRADES: 69.10, MART: 70.10, RS: 48.50, IBP: 50.00, PRL: 28.90, TandT: 91.80},
+            {attack: "FGSM", ERM: 29.90, DA: 25.80, PGDT: 57.95, TRADES: 54.60, MART: 61.90, RS: 28.90, IBP: 38.10, PRL: 25.80, TandT: 93.80},
+            {attack: "RFGSM", ERM: 0.00, DA: 0.00, PGDT: 49.15, TRADES: 50.40, MART: 48.50, RS: 3.70, IBP: 38.10, PRL: 0.00, TandT: 90.00},
+            {attack: "BIM", ERM: 0.00, DA: 0.00, PGDT: 52.00, TRADES: 57.20, MART: 47.40, RS: 2.10, IBP: 38.10, PRL: 0.00, TandT: 90.70},
+            {attack: "FAB", ERM: 1.00, DA: 2.10, PGDT: 43.00, TRADES: 46.40, MART: 40.20, RS: 5.30, IBP: 38.10, PRL: 4.10, TandT: 90.10},
+            {attack: "CW", ERM: 0.00, DA: 0.00, PGDT: 32.20, TRADES: 35.10, MART: 29.90, RS: 1.00, IBP: 40.20, PRL: 1.00, TandT: 92.90},
+            {attack: "UPGD", ERM: 0.00, DA: 0.00, PGDT: 49.85, TRADES: 50.50, MART: 49.80, RS: 5.10, IBP: 38.10, PRL: 0.00, TandT: 93.80},
+            {attack: "FFGSM", ERM: 19.60, DA: 23.70, PGDT: 60.55, TRADES: 55.70, MART: 66.00, RS: 33.00, IBP: 42.30, PRL: 29.90, TandT: 92.80},
+            {attack: "Jitter", ERM: 11.30, DA: 12.40, PGDT: 48.15, TRADES: 47.40, MART: 49.50, RS: 34.00, IBP: 39.20, PRL: 24.70, TandT: 90.70},
+            {attack: "PGD", ERM: 0.00, DA: 0.00, PGDT: 57.40, TRADES: 54.60, MART: 60.80, RS: 7.20, IBP: 40.20, PRL: 0.00, TandT: 91.80},
+            {attack: "EOTPGD", ERM: 0.00, DA: 0.00, PGDT: 50.10, TRADES: 50.30, MART: 50.50, RS: 3.00, IBP: 38.10, PRL: 0.00, TandT: 90.70},
+            {attack: "APGD", ERM: 0.00, DA: 0.00, PGDT: 48.40, TRADES: 51.00, MART: 46.40, RS: 1.00, IBP: 38.10, PRL: 0.00, TandT: 90.70},
+            {attack: "NIFGSM", ERM: 0.00, DA: 0.00, PGDT: 57.95, TRADES: 56.70, MART: 59.80, RS: 7.20, IBP: 38.10, PRL: 1.00, TandT: 92.80},
+            {attack: "SiniFGSM", ERM: 4.10, DA: 1.00, PGDT: 59.00, TRADES: 56.70, MART: 61.90, RS: 23.70, IBP: 38.10, PRL: 12.40, TandT: 93.70},
+            {attack: "VNIFGSM", ERM: 0.00, DA: 0.00, PGDT: 50.45, TRADES: 53.00, MART: 48.50, RS: 5.10, IBP: 38.10, PRL: 0.00, TandT: 92.90},
+            {attack: "APGDT", ERM: 0.00, DA: 0.00, PGDT: 40.90, TRADES: 44.30, MART: 38.10, RS: 0.00, IBP: 38.10, PRL: 0.00, TandT: 88.70},
+            {attack: "Square", ERM: 0.00, DA: 1.00, PGDT: 50.40, TRADES: 54.00, MART: 47.40, RS: 3.10, IBP: 38.10, PRL: 2.10, TandT: 88.08},
+            {attack: "Add Gaussian Noise", ERM: 25.80, DA: 43.30, PGDT: 79.10, TRADES: 78.40, MART: 80.40, RS: 74.20, IBP: 42.30, PRL: 45.40, TandT: 87.60},
+            {attack: "OnePixel", ERM: 79.40, DA: 83.50, PGDT: 78.05, TRADES: 74.20, MART: 82.50, RS: 83.50, IBP: 42.50, PRL: 80.40, TandT: 89.70},
+            {attack: "Pixle", ERM: 0.00, DA: 0.00, PGDT: 12.55, TRADES: 11.30, MART: 14.40, RS: 1.00, IBP: 10.30, PRL: 0.00, TandT: 17.50},
+            {attack: "PGDL2", ERM: 1.00, DA: 0.00, PGDT: 35.80, TRADES: 36.10, MART: 36.10, RS: 5.20, IBP: 36.10, PRL: 0.00, TandT: 92.90}
+        ];
+
+        const defenses = ["TandT", "DA", "PGDT", "TRADES", "MART", "RS", "PRL", "ERM", "IBP"];
+        const attacks = rawData.map(d => d.attack);
+
+        // Calculate defense averages
+        const defenseStats = defenses.map(def => ({
+            name: def,
+            avg: d3.mean(rawData.map(d => d[def])),
+            scores: rawData.map(d => ({attack: d.attack, value: d[def]}))
+        }));
+
+        // Dimensions
+        const width = 900;
+        const height = 800;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const defenseCircleRadius = 150;
+        const attackRadius = 315;
+
+        // Create SVG
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const g = svg.append("g")
+            .attr("transform", `translate(${centerX},${centerY})`);
+
+        // Color scales
+        const defenseColorScale = d3.scaleLinear()
+            .domain([0, 40, 70, 100])
+            .range(["#ff006e", "#ffbe0b", "#06ffa5", "#8338ec"]);
+
+        const attackColorScale = d3.scaleOrdinal()
+            .domain(attacks)
+            .range(d3.schemeCategory10);
+
+        // Layout defenses
+        const angleStep = (2 * Math.PI) / defenses.length;
+        defenseStats.forEach((d, i) => {
+            d.startAngle = i * angleStep;
+            d.endAngle = (i + 1) * angleStep;
+            d.angle = i * angleStep + angleStep / 2;
+        });
+
+        // Draw the main defense circle
+		// Draw the main defense circle
+		g.append("circle")
+			.attr("cx", 0)
+			.attr("cy", 0)
+			.attr("r", defenseCircleRadius)
+			.style("fill", "none")
+			.style("stroke", "rgba(255, 255, 255, 0.2)")
+			.style("stroke-width", 2)
+			.style("opacity", 0)
+			.transition()
+			.duration(1000)
+			.style("opacity", 1);
+
+		// Add pulsing shield rings (automatic transition)
+		const pulsingRings = g.append("g").attr("class", "pulsing-rings");
+
+		function createPulsingRing() {
+			pulsingRings.append("circle")
+				.attr("cx", 0)
+				.attr("cy", 0)
+				.attr("r", defenseCircleRadius)
+				.style("fill", "none")
+				.style("stroke", "#8338ec")
+				.style("stroke-width", 3)
+				.style("opacity", 0.8)
+				.transition()
+				.duration(2000)
+				.ease(d3.easeLinear)
+				.attr("r", defenseCircleRadius + 60)
+				.style("opacity", 0)
+				.style("stroke-width", 1)
+				.remove();
+		}
+
+		// Create pulsing rings continuously
+		setInterval(createPulsingRing, 2000);
+		createPulsingRing();
+
+		// Add rotating scanner beam (automatic transition)
+		const scannerBeam = g.append("line")
+			.attr("class", "scanner-beam")
+			.attr("x1", 0)
+			.attr("y1", 0)
+			.attr("x2", 0)
+			.attr("y2", -attackRadius - 50)
+			.style("stroke", "rgba(131, 56, 236, 0.4)")
+			.style("stroke-width", 2)
+			.style("filter", "drop-shadow(0 0 8px #8338ec)");
+
+		function rotateScannerBeam() {
+			scannerBeam
+				.transition()
+				.duration(4000)
+				.ease(d3.easeLinear)
+				.attrTween("transform", function() {
+					return d3.interpolateString("rotate(0)", "rotate(360)");
+				})
+				.on("end", rotateScannerBeam);
+		}
+
+		rotateScannerBeam();
+
+        // Draw colored arc segments
+        const arcs = g.selectAll(".defense-arc")
+            .data(defenseStats)
+            .enter()
+            .append("path")
+            .attr("class", "defense-arc")
+            .attr("d", d => {
+                const arc = d3.arc()
+                    .innerRadius(defenseCircleRadius - 15)
+                    .outerRadius(defenseCircleRadius + 15)
+                    .startAngle(d.startAngle)
+                    .endAngle(d.endAngle);
+                return arc(d);
+            })
+            .style("fill", d => defenseColorScale(d.avg))
+            .style("stroke", "black")
+            .style("stroke-width", 2)
+            .style("opacity", 1)
+            .on("click", function(event, d) {
+                selectDefense(d.name);
+            })
+            .on("mouseover", function(event, d) {
+                if (!selectedDefense) {
+                    d3.select(this).style("filter", "drop-shadow(0 0 20px currentColor)");
+                }
+                showDefenseTooltip(event, d);
+            })
+			            .on("mouseout", function() {
+                if (!selectedDefense) {
+                    d3.select(this).style("filter", "drop-shadow(0 0 8px rgba(255, 255, 255, 0.3))");
+                }
+                tooltip.style("opacity", 0);
+            });
+
+        // Defense labels - shift by 2 positions to align with arcs
+        g.selectAll(".defense-label")
+            .data(defenseStats)
+            .enter()
+            .append("text")
+            .attr("class", "defense-label")
+            .attr("transform", d => {
+                const radius = defenseCircleRadius - 40;
+                const labelAngle = d.angle - angleStep * 2;
+                const x = Math.cos(labelAngle) * radius;
+                const y = Math.sin(labelAngle) * radius;
+                return `translate(${x},${y})`;
+            })
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "middle")
+            .text(d => d.name)
+            .style("opacity", 0)
+            .transition()
+            .delay((d, i) => i * 100 + 500)
+            .duration(500)
+            .style("opacity", 1);
+
+        // Layout attacks in outer circle
+        const attackAngleStep = (2 * Math.PI) / attacks.length;
+        const attackPositions = attacks.map((attack, i) => ({
+            attack,
+            angle: i * attackAngleStep,
+            x: Math.cos(i * attackAngleStep) * attackRadius,
+            y: Math.sin(i * attackAngleStep) * attackRadius
+        }));
+
+        // Tooltip
+        const tooltip = d3.select("#tooltip");
+
+        let selectedDefense = null;
+        let selectedAttack = null;
+
+        // Draw attack nodes
+        const attackNodes = g.selectAll(".attack-dot")
+            .data(attackPositions)
+            .enter()
+            .append("circle")
+            .attr("class", "attack-dot")
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y)
+            .attr("r", 20)
+			.style("stroke", "black")
+            .style("stroke-width", 2)
+            .style("fill", d => attackColorScale(d.attack))
+            .style("opacity", 0)
+            .on("click", function(event, d) {
+                selectAttack(d.attack);
+            })
+            .on("mouseover", function(event, d) {
+                showAttackTooltip(event, d);
+            })
+            .on("mouseout", function() {
+                tooltip.style("opacity", 0);
+            });
+
+        attackNodes.transition()
+            .delay((d, i) => 1000 + i * 30)
+            .duration(500)
+            .style("opacity", 0.8);
+
+        // Attack labels - moved closer to circles
+        g.selectAll(".attack-label")
+            .data(attackPositions)
+            .enter()
+            .append("text")
+            .attr("class", "attack-label")
+            .attr("x", d => d.x * 1.10)
+            .attr("y", d => d.y * 1.10)
+            .attr("text-anchor", d => {
+                const angle = d.angle;
+                const normalizedAngle = ((angle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+                
+                if (normalizedAngle > Math.PI * 0.1 && normalizedAngle < Math.PI * 0.9) {
+                    return "middle";
+                } else if (normalizedAngle >= Math.PI * 0.9 && normalizedAngle <= Math.PI * 1.1) {
+                    return "end";
+                } else if (normalizedAngle > Math.PI * 1.1 && normalizedAngle < Math.PI * 1.9) {
+                    return "middle";
+                } else {
+                    return "start";
+                }
+            })
+            .attr("dy", d => {
+                const angle = d.angle % (2 * Math.PI);
+                if (angle >= Math.PI/4 && angle <= 3*Math.PI/4) return "1.2em";
+                if (angle <= -Math.PI/4 && angle >= -3*Math.PI/4) return "-0.2em";
+                return "0.4em";
+            })
+            .text(d => d.attack)
+            .style("opacity", 0)
+            .transition()
+            .delay((d, i) => 1000 + i * 30)
+            .duration(500)
+            .style("opacity", 0.9);
+
+        // Center score
+        const centerGroup = g.append("g").attr("class", "center-group");
+        
+        const centerScore = centerGroup.append("text")
+            .attr("class", "center-score")
+            .attr("y", -10)
+            .text("--");
+
+        const centerLabel = centerGroup.append("text")
+            .attr("class", "center-label")
+            .attr("y", 15)
+            .text("Overall Defense");
+
+        // Functions
+		function resetToDefault() {
+            // Clear selections
+            selectedDefense = null;
+            selectedAttack = null;
+            
+            // Clear all special visual effects
+            g.selectAll(".attack-line").remove();
+            g.selectAll(".value-label").remove();
+            g.selectAll(".penetration-indicator").remove();
+            
+            // Reset all arcs to default state
+            arcs.transition()
+                .duration(300)
+                .style("opacity", 1)
+                .style("fill", d => defenseColorScale(d.avg))
+                .style("filter", "drop-shadow(0 0 8px rgba(255, 255, 255, 0.3))");
+            
+            // Reset all attack nodes to default state
+            attackNodes.transition()
+                .duration(300)
+                .style("opacity", 0.8)
+                .style("filter", "none");
+            
+            // Reset center display
+            const overallAvg = d3.mean(defenseStats.map(d => d.avg));
+            centerScore.text(overallAvg.toFixed(1) + "%");
+            centerLabel.text("Overall Defense");
+        }
+
+        function selectDefense(defenseName) {
+            // If clicking the same defense, reset to default
+            if (selectedDefense === defenseName) {
+                resetToDefault();
+                updateInsights();
+                return;
+            }
+            
+            // Set new selection
+            selectedDefense = defenseName;
+            selectedAttack = null;
+            
+            // Apply new visualization
+            updateVisualization();
+            updateInsights();
+        }
+
+        function selectAttack(attackName) {
+            // If clicking the same attack, reset to default
+            if (selectedAttack === attackName) {
+                resetToDefault();
+                updateInsights();
+                return;
+            }
+            
+            // Set new selection
+            selectedAttack = attackName;
+            selectedDefense = null;
+            
+            // Apply new visualization
+            updateVisualization();
+            updateInsights();
+        }
+
+		function updateVisualization() {
+			// First, always remove all temporary elements
+			g.selectAll(".attack-line").remove();
+			g.selectAll(".value-label").remove();
+			g.selectAll(".penetration-indicator").remove();
+			
+			// ALWAYS reset arcs to their default colors first (before any checks)
+			arcs.style("fill", d => defenseColorScale(d.avg));
+			
+			// If nothing is selected, reset everything to default
+			if (!selectedDefense && !selectedAttack) {
+				arcs.transition()
+					.duration(500)
+					.style("opacity", 1)
+					.style("filter", "drop-shadow(0 0 8px rgba(255, 255, 255, 0.3))");
+				
+				attackNodes.transition()
+					.duration(500)
+					.style("opacity", 0.8)
+					.style("filter", "none");
+				
+				const overallAvg = d3.mean(defenseStats.map(d => d.avg));
+				centerScore.text(overallAvg.toFixed(1) + "%");
+				centerLabel.text("Overall Defense");
+				return; // Exit early
+			}
+			
+			if (selectedDefense) {
+				// Apply defense selection styling
+				arcs.transition()
+					.duration(500)
+					.style("opacity", d => d.name === selectedDefense ? 1 : 0.3)
+					.style("filter", d => {
+						if (d.name === selectedDefense) return "drop-shadow(0 0 25px currentColor)";
+						return "drop-shadow(0 0 8px rgba(255, 255, 255, 0.3))";
+					});
+
+				const defenseData = defenseStats.find(d => d.name === selectedDefense);
+				
+				const lineScale = d3.scaleLinear()
+					.domain([0, 100])
+					.range([0, attackRadius - defenseCircleRadius - 50]);
+				
+				const lines = defenseData.scores.map(s => {
+					const attackPos = attackPositions.find(a => a.attack === s.attack);
+					const angle = Math.atan2(attackPos.y, attackPos.x);
+					const lineLength = lineScale(s.value);
+					const startRadius = defenseCircleRadius + 20;
+					
+					return {
+						...s,
+						x1: Math.cos(angle) * startRadius,
+						y1: Math.sin(angle) * startRadius,
+						x2: Math.cos(angle) * (startRadius + lineLength),
+						y2: Math.sin(angle) * (startRadius + lineLength),
+						angle: angle,
+						color: defenseColorScale(s.value)
+					};
+				});
+
+				const lineElements = g.selectAll(".attack-line")
+					.data(lines)
+					.enter()
+					.append("line")
+					.attr("class", "attack-line")
+					.attr("x1", d => d.x1)
+					.attr("y1", d => d.y1)
+					.attr("x2", d => d.x1)
+					.attr("y2", d => d.y1)
+					.style("stroke", d => d.color)
+					.style("stroke-width", d => Math.max(2, d.value / 20))
+					.style("opacity", 0.8);
+
+				lineElements.transition()
+					.duration(800)
+					.attr("x2", d => d.x2)
+					.attr("y2", d => d.y2);
+
+				setTimeout(() => {
+					g.selectAll(".value-label")
+						.data(lines)
+						.enter()
+						.append("text")
+						.attr("class", "value-label")
+						.attr("x", d => d.x2)
+						.attr("y", d => d.y2)
+						.attr("dx", d => Math.cos(d.angle) * 12)
+						.attr("dy", d => Math.sin(d.angle) * 12 + 4)
+						.attr("text-anchor", "middle")
+						.text(d => d.value + "%")
+						.style("fill", d => d.color)
+						.style("opacity", 0)
+						.transition()
+						.duration(400)
+						.style("opacity", 1);
+				}, 800);
+
+				centerScore.text(defenseData.avg.toFixed(1) + "%");
+				centerLabel.text(selectedDefense + " Avg");
+				
+				// Reset attack nodes for defense view
+				attackNodes.transition()
+					.duration(500)
+					.style("opacity", 0.8)
+					.style("filter", "none");
+				
+			} else if (selectedAttack) {
+				const attackData = rawData.find(d => d.attack === selectedAttack);
+				
+				// Apply attack-specific styling with red/green colors
+				defenseStats.forEach(defStat => {
+					const value = attackData[defStat.name];
+					const isPenetrated = value < 50;
+					
+					const targetArc = arcs.filter(d => d.name === defStat.name);
+					targetArc.transition()
+						.duration(500)
+						.style("fill", isPenetrated ? "#ff006e" : "#06ffa5")
+						.style("opacity", isPenetrated ? 0.8 : 1)
+						.style("filter", isPenetrated ? "drop-shadow(0 0 15px #ff006e)" : "drop-shadow(0 0 10px #06ffa5)");
+					
+					const symbol = isPenetrated ? "✗" : "✓";
+					const color = isPenetrated ? "#ff006e" : "#06ffa5";
+					const radius = defenseCircleRadius + 65;
+					const labelAngle = defStat.angle - angleStep * 2;
+					
+					g.append("text")
+						.attr("class", "penetration-indicator")
+						.attr("x", Math.cos(labelAngle) * radius)
+						.attr("y", Math.sin(labelAngle) * radius)
+						.attr("text-anchor", "middle")
+						.attr("dy", "0.35em")
+						.text(symbol)
+						.style("font-size", "24px")
+						.style("font-weight", "bold")
+						.style("fill", color)
+						.style("opacity", 0)
+						.style("text-shadow", `0 0 10px ${color}`)
+						.transition()
+						.delay(200)
+						.duration(400)
+						.style("opacity", 1);
+					
+					g.append("text")
+						.attr("class", "penetration-indicator")
+						.attr("x", Math.cos(labelAngle) * (radius + 30))
+						.attr("y", Math.sin(labelAngle) * (radius + 30))
+						.attr("text-anchor", "middle")
+						.text(value.toFixed(0) + "%")
+						.style("font-size", "12px")
+						.style("font-weight", "bold")
+						.style("fill", color)
+						.style("opacity", 0)
+						.style("text-shadow", `0 0 5px ${color}`)
+						.transition()
+						.delay(400)
+						.duration(400)
+						.style("opacity", 1);
+				});
+
+				const breached = defenses.filter(def => attackData[def] < 50).length;
+				centerScore.text(breached + "/9");
+				centerLabel.text("Defenses Breached");
+				
+				// Update attack nodes for attack view
+				attackNodes.transition()
+					.duration(500)
+					.style("opacity", d => d.attack === selectedAttack ? 1 : 0.2)
+					.style("filter", d => {
+						if (d.attack === selectedAttack) return "drop-shadow(0 0 20px currentColor)";
+						return "none";
+					});
+			}
+		}
+
+        function showDefenseTooltip(event, d) {
+            const vulnerabilities = d.scores.filter(s => s.value < 40).length;
+            const strengths = d.scores.filter(s => s.value >= 70).length;
+            
+            tooltip
+                .style("opacity", 1)
+                .style("left", (event.pageX + 15) + "px")
+                .style("top", (event.pageY - 15) + "px")
+                .html(`
+                    <div class="tooltip-title">🛡️ ${d.name} Defense</div>
+                    <div class="tooltip-stat">Average Robustness: <strong>${d.avg.toFixed(1)}%</strong></div>
+                    <div class="tooltip-stat">Strong Against: <strong>${strengths}/25</strong> attacks</div>
+                    <div class="tooltip-stat">Vulnerable To: <strong>${vulnerabilities}/25</strong> attacks</div>
+                    <div class="tooltip-stat" style="margin-top: 8px; color: #8ab4f8;">Click to see battle connections</div>
+                `);
+        }
+
+        function showAttackTooltip(event, d) {
+            const attackData = rawData.find(a => a.attack === d.attack);
+            const avgDamage = d3.mean(defenses.map(def => attackData[def]));
+            const breaches = defenses.filter(def => attackData[def] < 50).length;
+            
+            tooltip
+                .style("opacity", 1)
+                .style("left", (event.pageX + 15) + "px")
+                .style("top", (event.pageY - 15) + "px")
+                .html(`
+                    <div class="tooltip-title">⚔️ ${d.attack}</div>
+                    <div class="tooltip-stat">Avg Damage: <strong>${(100 - avgDamage).toFixed(1)}%</strong></div>
+                    <div class="tooltip-stat">Defenses Breached: <strong>${breaches}/9</strong></div>
+                    <div class="tooltip-stat">Most Vulnerable: <strong>${defenses.reduce((a, b) => attackData[a] < attackData[b] ? a : b)}</strong></div>
+                    <div class="tooltip-stat" style="margin-top: 8px; color: #8ab4f8;">Click to see impact </div>
+                `);
+        }
+
+        function updateInsights() {
+            const insightText = document.getElementById('insightText');
+            const dataGrid = document.getElementById('dataGrid');
+            
+            if (selectedDefense) {
+                const defData = defenseStats.find(d => d.name === selectedDefense);
+                const worst = defData.scores.reduce((a, b) => a.value < b.value ? a : b);
+                const best = defData.scores.reduce((a, b) => a.value > b.value ? a : b);
+                
+                insightText.innerHTML = `
+                    <strong>${selectedDefense}</strong> maintains an average defense strength of <strong>${defData.avg.toFixed(1)}%</strong>. 
+                    It performs exceptionally well against <strong>${best.attack}</strong> (${best.value.toFixed(1)}% accuracy retained) 
+                    but struggles against <strong>${worst.attack}</strong> (${worst.value.toFixed(1)}% accuracy). 
+                    The color-coded lines show the defense's effectiveness against each attack radiating from the perimeter.
+                `;
+
+                dataGrid.style.display = 'grid';
+                dataGrid.innerHTML = defData.scores
+                    .sort((a, b) => b.value - a.value)
+                    .map(s => `
+                        <div class="data-cell" style="background: ${defenseColorScale(s.value).replace(')', ', 0.2)')}; border-color: ${defenseColorScale(s.value)};">
+                            <div class="data-cell-attack">${s.attack}</div>
+                            <div class="data-cell-value" style="color: ${defenseColorScale(s.value)}">${s.value.toFixed(1)}%</div>
+                            <div class="data-cell-defense">${selectedDefense} accuracy</div>
+                        </div>
+                    `).join('');
+            } else if (selectedAttack) {
+                const attackData = rawData.find(d => d.attack === selectedAttack);
+                const mostVulnerable = defenses.reduce((a, b) => attackData[a] < attackData[b] ? a : b);
+                const mostResilient = defenses.reduce((a, b) => attackData[a] > attackData[b] ? a : b);
+                const breached = defenses.filter(def => attackData[def] < 50).length;
+                
+                insightText.innerHTML = `
+                    <strong>${selectedAttack}</strong> attack breaches <strong>${breached}/9</strong> defense systems (those below 50% accuracy). 
+                    Most vulnerable: <strong>${mostVulnerable}</strong> (${attackData[mostVulnerable].toFixed(1)}% remaining), 
+                    Most resilient: <strong>${mostResilient}</strong> (${attackData[mostResilient].toFixed(1)}% accuracy). 
+                    Breached defenses are marked with red ✗ and glow red. Surviving defenses show green ✓.
+                `;
+
+                dataGrid.style.display = 'grid';
+                const attackValues = defenses.map(def => ({
+                    defense: def,
+                    value: attackData[def],
+                    breached: attackData[def] < 50
+                })).sort((a, b) => b.value - a.value);
+
+                dataGrid.innerHTML = attackValues.map(d => {
+                    const borderColor = d.breached ? '#ff006e' : '#06ffa5';
+                    const backgroundColor = d.breached 
+                        ? 'rgba(255, 0, 110, 0.2)' 
+                        : defenseColorScale(d.value).replace(')', ', 0.2)');
+                    
+                    return `
+                        <div class="data-cell" style="background: ${backgroundColor}; border: 2px solid ${borderColor};">
+                            <div class="data-cell-attack">${d.breached ? '✗' : '✓'} ${d.defense} Defense</div>
+                            <div class="data-cell-value" style="color: ${borderColor}">${d.value.toFixed(1)}%</div>
+                            <div class="data-cell-defense">vs ${selectedAttack}</div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                dataGrid.style.display = 'none';
+                insightText.innerHTML = `
+                    1. Click on any defense shield (colored arcs) or attack node (perimeter dots) to reveal the battle dynamics.<br><br>
+                    2. Click on Full Data Matrix on top Menu to explore specific battles.<br><br>			
+					3. Click on Reset All to restore the Default settings. 
+                `;
+            }
+        }
+
+        function updateStats() {
+            const overallAvg = d3.mean(defenseStats.map(d => d.avg));
+            const bestDef = defenseStats.reduce((a, b) => a.avg > b.avg ? a : b);
+            const attackAvgs = rawData.map(d => ({
+                attack: d.attack,
+                avg: d3.mean(defenses.map(def => d[def]))
+            }));
+            const worstAtt = attackAvgs.reduce((a, b) => a.avg < b.avg ? a : b);
+            const survivalRate = defenseStats.filter(d => d.avg >= 50).length / defenses.length * 100;
+
+            document.getElementById('avgScore').textContent = overallAvg.toFixed(1) + '%';
+            document.getElementById('bestDefense').textContent = bestDef.name;
+            document.getElementById('worstAttack').textContent = worstAtt.attack;
+            document.getElementById('survivalRate').textContent = survivalRate.toFixed(0) + '%';
+        }
+
+        document.querySelectorAll('.defense-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const defense = this.dataset.defense;
+                
+                document.querySelectorAll('.defense-btn').forEach(b => b.classList.remove('active'));
+                
+                if (selectedDefense === defense) {
+                    selectedDefense = null;
+                } else {
+                    selectedDefense = defense;
+                    this.classList.add('active');
+                }
+                
+                selectedAttack = null;
+                updateVisualization();
+                updateInsights();
+            });
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            selectedDefense = null;
+            selectedAttack = null;
+            document.querySelectorAll('.defense-btn').forEach(b => b.classList.remove('active'));
+            updateVisualization();
+            updateInsights();
+        });
+
+        document.getElementById('interactiveMode').addEventListener('click', function() {
+            document.querySelectorAll('.mode-toggle .btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('matrixContainer').style.display = 'none';
+            selectedDefense = null;
+            selectedAttack = null;
+            updateVisualization();
+            updateInsights();
+        });
+
+        document.getElementById('matrixMode').addEventListener('click', function() {
+		    g.selectAll(".attack-line").remove()
+			g.selectAll(".value-label").remove()
+			g.selectAll(".penetration-indicator").remove()
+			arcs.style("fill", d => defenseColorScale(d.avg))
+            document.querySelectorAll('.mode-toggle .btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('matrixContainer').style.display = 'block';
+            
+            setTimeout(() => {
+                document.getElementById('matrixContainer').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start' 
+                });
+            }, 100);
+            
+            arcs.transition()
+                .duration(500)
+                .style("opacity", 0.3);
+
+            attackNodes.transition()
+                .duration(500)
+                .style("opacity", 0.3)
+                .style("filter", "none");
+
+            const table = document.getElementById('matrixTable');
+            table.innerHTML = '';
+            
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            headerRow.innerHTML = '<th>Attack / Defense</th>' + 
+                defenses.map(d => `<th>${d}</th>`).join('');
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            
+            const tbody = document.createElement('tbody');
+            rawData.forEach(attack => {
+                const row = document.createElement('tr');
+                const nameCell = document.createElement('td');
+                nameCell.textContent = attack.attack;
+                nameCell.style.color = '#8ab4f8';
+                row.appendChild(nameCell);
+                
+                defenses.forEach(def => {
+                    const cell = document.createElement('td');
+                    const value = attack[def];
+                    cell.textContent = value.toFixed(1) + '%';
+                    cell.style.background = defenseColorScale(value);
+                    cell.style.color = value > 50 ? '#000' : '#fff';
+                    cell.style.fontWeight = 'bold';
+                    
+					cell.onclick = () => {
+					    g.selectAll(".attack-line").remove()
+						g.selectAll(".value-label").remove()
+						g.selectAll(".penetration-indicator").remove()
+						arcs.style("fill", d => defenseColorScale(d.avg));
+                        selectedAttack = attack.attack;
+                        selectedDefense = def;
+                        
+                        // Scroll to the chart to see the visualization
+                        document.getElementById('chart').scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                        
+                        arcs.transition()
+                            .duration(300)
+                            .style("opacity", d => d.name === def ? 1 : 0.2)
+                            .style("filter", d => d.name === def ? "drop-shadow(0 0 25px currentColor)" : "drop-shadow(0 0 8px rgba(255, 255, 255, 0.3))");
+                        
+                        attackNodes.transition()
+                            .duration(300)
+                            .style("opacity", d => d.attack === attack.attack ? 1 : 0.2)
+                            .style("filter", d => d.attack === attack.attack ? "drop-shadow(0 0 20px currentColor)" : "none");
+                        
+                        g.selectAll(".attack-line").remove();
+                        
+                        
+                        centerScore.text(value.toFixed(1) + "%");
+                        centerLabel.text(`${def} vs ${attack.attack}`);
+                        
+                        const insightText = document.getElementById('insightText');
+                        const dataGrid = document.getElementById('dataGrid');
+                        dataGrid.style.display = 'none';
+                        
+                        insightText.innerHTML = `
+						    ${value >= 70 ? '✅ Strong resistance!' : value >= 40 ? '⚠️ Moderate vulnerability.' : '❌ Critical breach!'}<br><br>
+                            <strong>Specific Battle:</strong> ${def} defense against ${attack.attack} attack maintains 
+                            <strong>${value.toFixed(1)}%</strong> accuracy. 
+                        `;
+                    };
+                    
+                    cell.onmouseover = function(event) {
+                        tooltip
+                            .style("opacity", 1)
+                            .html(`
+                                <div class="tooltip-title">${attack.attack} vs ${def}</div>
+                                <div class="tooltip-stat">Accuracy: <strong>${value.toFixed(1)}%</strong></div>
+                                <div class="tooltip-stat">Click to see connection</div>
+                            `)
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY - 10) + "px");
+                    };
+                    
+                    cell.onmouseout = function() {
+                        tooltip.style("opacity", 0);
+                    };
+                    
+                    row.appendChild(cell);
+                });
+                
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            
+            const insightText = document.getElementById('insightText');
+            const dataGrid = document.getElementById('dataGrid');
+            dataGrid.style.display = 'none';
+            
+            insightText.innerHTML = `
+                <strong>Complete Data Matrix:</strong> All 225 data points (25 attacks × 9 defenses) displayed below. 
+                Click any cell to see the specific battle connection in the radial visualization above. 
+                Color intensity shows defense effectiveness.
+            `;
+        });
+
+        updateVisualization();
+        updateStats();
+        updateInsights();
+    </script>
+</body>
+</html>

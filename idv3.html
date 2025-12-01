@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Week 8 — 10 Charts (Updated to 9 with Pen Sketch & Blending)</title>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<style>
+  :root{
+    --muted:#6b7280;
+    --accent:#2563eb;
+    --accent2:#10b981;
+    --bg:#ffffff;
+    --card:#fbfdff;
+  }
+  html,body{height:100%;margin:0;background:var(--bg);font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial;color:#0f1724}
+  header{padding:16px 22px;border-bottom:1px solid #eef2f7}
+  header h1{margin:0;font-size:18px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:18px;padding:18px}
+  .card{background:var(--card);border:1px solid #eef2f7;padding:14px;border-radius:8px;box-shadow:0 6px 20px rgba(15,23,42,0.04);min-height:240px;position:relative}
+  .card h3{margin:0 0 6px;font-size:14px;color:#0f1724}
+  .caption{font-size:12px;color:var(--muted);margin-bottom:8px}
+  svg{width:100%;height:180px;display:block}
+  .legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .legend .item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .legend .sw{width:14px;height:10px;border-radius:2px}
+  #tooltip{position:fixed;pointer-events:none;padding:8px 10px;background:#111827;color:#fff;border-radius:6px;font-size:12px;display:none;z-index:999}
+  button.small{font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid #e6eef6;background:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<header><h1>Replicated Charts (9) — interactive & meaningful animations</h1></header>
+
+<div class="grid">
+  <div class="card" id="chart1"><h3>Chart 1 — Vector space</h3><div class="caption">Arrows animate from the origin to show direction & magnitude (meaningful motion).</div><svg></svg></div>
+  <div class="card" id="chart2"><h3>Chart 2 — Word network</h3><div class="caption">Force layout settles; hover nodes to highlight neighbors.</div><svg></svg></div>
+  <div class="card" id="chart3"><h3>Chart 3 — Optimisation route</h3><div class="caption">A tracer moves along the path from origin → end, indicating direction.</div><svg></svg></div>
+  <div class="card" id="chart4"><h3>Chart 4 — Frequency</h3><div class="caption">Line + shaded area are drawn left→right to reveal temporal behavior.</div><svg></svg></div>
+  <div class="card" id="chart5"><h3>Chart 5 — Parametric curve</h3><div class="caption">Dot follows a parametric curve to indicate parameter progression.</div><svg></svg></div>
+
+  <div class="card" id="chart6"><h3>Chart 6 — Model Frequency (stacked area)</h3>
+    <div class="caption">Stacked areas for Set / Sequence / Vector / End-to-end models; overlapping colors now blend visually.</div>
+    <svg></svg>
+    <div class="legend" id="legend6" style="margin-top:8px">
+      <div class="item"><span class="sw" style="background:#06b6d4"></span>Set model</div>
+      <div class="item"><span class="sw" style="background:#f59e0b"></span>Sequence model</div>
+      <div class="item"><span class="sw" style="background:#7c3aed"></span>Vector model</div>
+      <div class="item"><span class="sw" style="background:#ec4899"></span>End-to-end</div>
+    </div>
+  </div>
+
+  <div class="card" id="chart7"><h3>Chart 7 — Interactive Venn</h3><div class="caption">Hover a circle to highlight it; when both hover/overlap, the intersection region is computed and highlighted precisely.</div><svg></svg></div>
+
+  <div class="card" id="chart8"><h3>Chart 8 — Bars (sort & explode)</h3><div class="caption">Click 'Sort' to toggle order; hover shows values; click a bar to 'explode' it (enlarge).</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><button id="sortBtn" class="small">Sort: Desc</button><button id="randomize" class="small">Randomize values</button></div>
+    <svg></svg>
+  </div>
+
+  <div class="card" id="chart9"><h3>Chart 9 — Sketch (Mickey-style Pen Sketch)</h3><div class="caption">Drawn with multiple thin strokes + crosshatching for a pen-sketch look.</div><svg></svg></div>
+</div>
+<section id="notes" style="background:#f8fafc;padding:20px 26px;border-bottom:1px solid #e2e8f0;">
+  <h2 style="margin-top:0;font-size:18px;color:#0f172a;">🧠 Notes on D3.js Chart Replication Process</h2>
+  <ol style="margin-top:10px;line-height:1.6;font-size:14px;color:#374151;">
+    <li><strong>Started the project:</strong> Asked ChatGPT (GPT-5) to replicate 12 D3.js charts from the assignment using interactive and animated features. Discussed structure, layout, and D3.js version compatibility.</li>
+    <li><strong>Chart-by-chart construction:</strong> 
+      <ul style="margin-top:6px;">
+        <li><strong>Chart 1 (Vector space):</strong> Learned how to animate arrows using D3 transitions. Verified origin anchoring and directional magnitude rendering.</li>
+        <li><strong>Chart 2 (Word network):</strong> Iterated with ChatGPT on D3 force simulations, adding hover effects to highlight connected nodes.</li>
+        <li><strong>Chart 3 (Optimisation route):</strong> Tested several path generation functions until a smooth curved tracer animation worked correctly.</li>
+        <li><strong>Chart 4 (Frequency):</strong> Added line animation using <code>stroke-dasharray</code> for left-to-right drawing motion.</li>
+        <li><strong>Chart 5 (Parametric curve):</strong> Used a parametric sine-cosine combination, refined timer animation to loop the moving dot.</li>
+        <li><strong>Chart 6 (Stacked blended area):</strong> Learned about <code>mix-blend-mode:multiply</code> for visual overlap blending between models.</li>
+        <li><strong>Chart 7 (Venn Diagram):</strong> Worked on precise geometric intersection computation between two circles with hover highlighting.</li>
+        <li><strong>Chart 8 (Bars):</strong> Added interactivity — sorting, randomization, and click-to-explode animations with tooltips.</li>
+        <li><strong>Chart 9 (Mickey sketch):</strong> Used random jittered line loops and <code>stroke-dashoffset</code> animation for a pen-sketch aesthetic.</li>
+      </ul>
+    </li>
+    <li><strong>Intermediate stages:</strong> Saved partial versions after every 2 charts, verifying animation logic via the browser console and debugging with D3’s data joins.</li>
+    <li><strong>Final integration:</strong> Combined all charts into one grid layout. Unified colors, tooltips, and hover effects. Adjusted responsive grid to handle smaller screens.</li>
+    <li><strong>Reflection:</strong> ChatGPT guided most code patterns and corrections — particularly with SVG path animation syntax, simulation forces, and CSS styling for smooth UI.</li>
+  </ol>
+</section>
+
+
+<div id="tooltip"></div>
+
+<script>
+// Common tooltip helper
+const tooltip = d3.select('#tooltip');
+function showTip(html, event){
+  tooltip.style('display','block').html(html)
+    .style('left', (event.pageX + 12) + 'px')
+    .style('top', (event.pageY + 12) + 'px');
+}
+function hideTip(){ tooltip.style('display','none'); }
+
+/* ---------------- Chart 1: Vector space ---------------- */
+(function(){
+  const svg = d3.select('#chart1 svg');
+  svg.selectAll('*').remove();
+  const w = svg.node().clientWidth, h = svg.node().clientHeight;
+  const cx = w/2, cy = h/2;
+  const g = svg.append('g');
+
+  // Axes
+  g.append('line')
+    .attr('x1',0).attr('x2',w)
+    .attr('y1',cy).attr('y2',cy)
+    .attr('stroke','#e6eef6').attr('opacity',0.2);
+  g.append('line')
+    .attr('x1',cx).attr('x2',cx)
+    .attr('y1',0).attr('y2',h)
+    .attr('stroke','#e6eef6').attr('opacity',0.2);
+
+  // Origin
+  g.append('circle')
+    .attr('cx',cx).attr('cy',cy)
+    .attr('r',3).attr('fill','#111827');
+
+  const cols = ['#06b6d4','#f59e0b','#7c3aed','#ec4899'];
+  const vectors = d3.range(10).map((d,i)=>({
+    angle: -110 + i*22 + (Math.random()-0.5)*8,
+    mag: 30 + Math.random()*110,
+    color: cols[i%cols.length]
+  }));
+
+  // Arrow marker
+  svg.append('defs').append('marker')
+    .attr('id','arrow1')
+    .attr('viewBox','0 0 10 10')
+    .attr('refX',9)
+    .attr('refY',5)
+    .attr('markerWidth',6)
+    .attr('markerHeight',6)
+    .attr('orient','auto')
+    .append('path')
+    .attr('d','M0 0 L10 5 L0 10 Z')
+    .attr('fill','#111827');
+
+  // Draw vectors
+  const lines = g.selectAll('line.vec')
+    .data(vectors)
+    .enter()
+    .append('line')
+    .attr('class','vec')
+    .attr('x1',cx).attr('y1',cy)
+    .attr('x2',cx).attr('y2',cy)
+    .attr('stroke',d=>d.color)
+    .attr('stroke-width',2.6)
+    .attr('marker-end','url(#arrow1)')
+    .on('mouseenter',(e,d)=>showTip(`angle: ${Math.round(d.angle)}°<br>mag: ${Math.round(d.mag)}`,e))
+    .on('mouseleave',hideTip);
+
+  // Animate vectors (fix Y-direction)
+  lines.transition()
+    .delay((d,i)=>i*110)
+    .duration(900)
+    .attrTween('x2',d=>t=>cx + Math.cos(d.angle*Math.PI/180)*d.mag*t)
+    .attrTween('y2',d=>t=>cy - Math.sin(d.angle*Math.PI/180)*d.mag*t); // <-- flipped sign
+})();
+
+
+/* ---------------- Chart 2: Word network ---------------- */
+(function(){
+  const svg = d3.select('#chart2 svg');
+  svg.selectAll('*').remove();
+  const w = svg.node().clientWidth, h = svg.node().clientHeight;
+  const labels = ['design','ux','data','user','test','flow','click','map','color','scale','grid','plot','node','edge'];
+  const nodes = labels.map((t,i)=>({id:i,label:t}));
+  const links = d3.range(18).map(()=>({source:Math.floor(Math.random()*nodes.length), target:Math.floor(Math.random()*nodes.length)})).filter(l=>l.source!==l.target);
+
+  const link = svg.append('g').attr('stroke','#cbd5e1').attr('stroke-opacity',0.25).selectAll('line').data(links).enter().append('line');
+  const nodeG = svg.append('g').selectAll('g').data(nodes).enter().append('g').call(d3.drag()
+    .on('drag',(event,d)=>{d.fx=event.x;d.fy=event.y;}));
+
+  nodeG.append('circle').attr('r',8).attr('fill','#60a5fa');
+  nodeG.append('text').text(d=>d.label).attr('x',12).attr('y',4).attr('font-size',11).attr('fill','#0f1724');
+
+  const sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d=>d.id).distance(60).strength(0.6))
+    .force('charge', d3.forceManyBody().strength(-110))
+    .force('center', d3.forceCenter(w/2, h/2))
+    .on('tick', ()=>{link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+                     nodeG.attr('transform',d=>`translate(${d.x},${d.y})`);});
+
+  nodeG.on('mouseenter', function(event,d){
+    const idx=d.id, neighbors=new Set([idx]);
+    links.forEach(l=>{if(l.source.id===idx)neighbors.add(l.target.id);if(l.target.id===idx)neighbors.add(l.source.id);});
+    nodeG.selectAll('circle').attr('opacity',n=>neighbors.has(n.id)?1:0.16);
+    link.attr('stroke-opacity',l=>(l.source.id===idx||l.target.id===idx)?0.8:0.08);
+  }).on('mouseleave',()=>{nodeG.selectAll('circle').attr('opacity',1);link.attr('stroke-opacity',0.25);});
+})();
+
+/* ---------------- Chart 3: Optimisation route ---------------- */
+(function(){
+  const svg=d3.select('#chart3 svg');svg.selectAll('*').remove();
+  const w=svg.node().clientWidth,h=svg.node().clientHeight;
+  const pad=18,cols=14,rows=6;
+  const cellW=(w-2*pad)/cols,cellH=(h-2*pad)/rows;
+  const g=svg.append('g').attr('transform',`translate(${pad},${pad})`);
+  for(let i=0;i<=cols;i++)g.append('line').attr('x1',i*cellW).attr('x2',i*cellW).attr('y1',0).attr('y2',rows*cellH).attr('stroke','#e6eef6').attr('opacity',0.12);
+  for(let j=0;j<=rows;j++)g.append('line').attr('y1',j*cellH).attr('y2',j*cellH).attr('x1',0).attr('x2',cols*cellW).attr('stroke','#e6eef6').attr('opacity',0.12);
+  function route(){const p=[];let x=0,y=Math.floor(rows/2);p.push([x,y]);while(x<cols-1){x++;if(Math.random()>0.6)y=Math.max(0,Math.min(rows-1,y+(Math.random()>0.5?1:-1)));p.push([x,y]);}return p;}
+  const pts=route().map(d=>[d[0]*cellW+cellW/2,d[1]*cellH+cellH/2]);
+  const path=g.append('path').attr('d',d3.line().curve(d3.curveCatmullRom)(pts)).attr('fill','none').attr('stroke','#2563eb').attr('stroke-width',3);
+  const tot=path.node().getTotalLength();const tracer=g.append('circle').attr('r',6).attr('fill','#fff').attr('stroke','#2563eb').attr('stroke-width',2);
+  let t0=Date.now();d3.timer(()=>{const p=((Date.now()-t0)%3000)/3000;const pt=path.node().getPointAtLength(p*tot);tracer.attr('cx',pt.x).attr('cy',pt.y);});
+})();
+
+/* ---------------- Chart 4: Frequency ---------------- */
+(function(){
+  const svg=d3.select('#chart4 svg');svg.selectAll('*').remove();
+  const w=svg.node().clientWidth,h=svg.node().clientHeight,pad=36;
+  const N=140;const data=d3.range(N).map(i=>({x:i,y:40+24*Math.sin(i/7)+6*Math.cos(i/3)+(Math.random()-0.5)*6}));
+  const x=d3.scaleLinear().domain(d3.extent(data,d=>d.x)).range([pad,w-pad]);
+  const y=d3.scaleLinear().domain([0,d3.max(data,d=>d.y)+6]).range([h-pad,20]);
+  const area=d3.area().x(d=>x(d.x)).y0(y(0)).y1(d=>y(d.y)).curve(d3.curveMonotoneX);
+  const line=d3.line().x(d=>x(d.x)).y(d=>y(d.y)).curve(d3.curveMonotoneX);
+  svg.append('path').datum(data).attr('d',area).attr('fill','#dbeafe').attr('opacity',0.7);
+  const pg=svg.append('path').datum(data).attr('d',line).attr('fill','none').attr('stroke','#06b6d4').attr('stroke-width',2);
+  const L=pg.node().getTotalLength();
+  pg.attr('stroke-dasharray',L+' '+L).attr('stroke-dashoffset',L).transition().duration(2400).ease(d3.easeCubicOut).attr('stroke-dashoffset',0);
+})();
+
+/* ---------------- Chart 5: Parametric curve ---------------- */
+(function(){
+  const svg=d3.select('#chart5 svg');svg.selectAll('*').remove();
+  const w=svg.node().clientWidth,h=svg.node().clientHeight,cx=w/2,cy=h/2,R=Math.min(w,h)/3;
+  const tvals=d3.range(0,Math.PI*2,0.02);
+  const pts=tvals.map(t=>[cx+R*Math.sin(2*t),cy+(R*0.6)*Math.cos(3*t)]);
+  const path=svg.append('path').attr('d',d3.line().curve(d3.curveCatmullRom)(pts)).attr('fill','none').attr('stroke','#ec4899').attr('stroke-width',2);
+  const dot=svg.append('circle').attr('r',5).attr('fill','#fff').attr('stroke','#ec4899').attr('stroke-width',2);
+  
+  // Add hover circle (initially hidden)
+  const hoverDot=svg.append('circle').attr('r',6).attr('fill','#fbbf24').attr('stroke','#fff').attr('stroke-width',2).attr('opacity',0);
+  
+  // Add text label for hover info
+  const label=svg.append('text').attr('font-size',12).attr('font-family','monospace').attr('fill','#fff').attr('opacity',0);
+  const labelBg=svg.append('rect').attr('fill','#1f2937').attr('rx',4).attr('opacity',0);
+  
+  const L=path.node().getTotalLength();
+  
+  // Animation timer
+  d3.timer(()=>{const t=(Date.now()/3500)%1;const p=path.node().getPointAtLength(t*L);dot.attr('cx',p.x).attr('cy',p.y);});
+  
+  // Hover interaction
+  svg.on('mousemove', function(event){
+    const [mx,my]=d3.pointer(event);
+    let minDist=Infinity,bestT=0,bestPt=null;
+    
+    // Find closest point on curve
+    tvals.forEach(t=>{
+      const x=cx+R*Math.sin(2*t),y=cy+(R*0.6)*Math.cos(3*t);
+      const dist=Math.sqrt((x-mx)**2+(y-my)**2);
+      if(dist<minDist){minDist=dist;bestT=t;bestPt=[x,y];}
+    });
+    
+    if(minDist<30 && bestPt){
+      hoverDot.attr('cx',bestPt[0]).attr('cy',bestPt[1]).attr('opacity',1);
+      
+      const txt=`t: ${bestT.toFixed(3)}\nx: ${((bestPt[0]-cx)/R).toFixed(2)}\ny: ${((bestPt[1]-cy)/R).toFixed(2)}`;
+      label.text('').attr('opacity',1);
+      
+      const lines=txt.split('\n');
+      lines.forEach((line,i)=>{
+        label.append('tspan').text(line).attr('x',bestPt[0]+15).attr('y',bestPt[1]-20+i*14).attr('dy',0);
+      });
+      
+      const bbox=label.node().getBBox();
+      labelBg.attr('x',bbox.x-4).attr('y',bbox.y-2).attr('width',bbox.width+8).attr('height',bbox.height+4).attr('opacity',0.9);
+      labelBg.raise();
+      label.raise();
+    }
+  });
+  
+  svg.on('mouseleave',()=>{
+    hoverDot.attr('opacity',0);
+    label.attr('opacity',0);
+    labelBg.attr('opacity',0);
+  });
+})();
+
+/* ---------------- Chart 6: Model Frequency (overlapping blended areas) ---------------- */
+(function(){
+  const svg = d3.select('#chart6 svg');
+  svg.selectAll('*').remove();
+  const w = svg.node().clientWidth, h = svg.node().clientHeight, pad = 40;
+
+  const years = d3.range(1980, 2026);
+  const data = years.map(y => ({
+    year: y,
+    set: (y < 2000) ? Math.random()*1.5 :
+         1.5 + (y - 2000)*0.02 + Math.random()*1.5,
+    seq: (y < 2005) ? Math.random()*1.2 :
+         1 + (y - 2005)*0.06 + Math.random()*2,
+    vec: (y < 2012) ? Math.random()*0.8 :
+         0.5 + (y - 2012)*0.12 + Math.random()*3,
+    end: (y < 2016) ? Math.random()*0.6 :
+         0.3 + (y - 2016)*0.2 + Math.random()*4
+  }));
+
+  const keys = ['set', 'seq', 'vec', 'end'];
+  const color = d3.scaleOrdinal()
+    .domain(keys)
+    .range(['#06b6d4', '#f59e0b', '#7c3aed', '#ec4899']);
+
+  const x = d3.scaleLinear()
+    .domain(d3.extent(years))
+    .range([pad, w - pad]);
+
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(data, d =>
+      Math.max(d.set, d.seq, d.vec, d.end)
+    ) * 1.2])
+    .range([h - pad, 20]);
+
+  const area = d3.area()
+    .x(d => x(d.year))
+    .y0(y(0))
+    .y1((d, i, nodes) => y(d.value))
+    .curve(d3.curveCatmullRom);
+
+  svg.append('g')
+    .attr('style', 'mix-blend-mode:multiply'); // enables overlap blending
+
+  keys.forEach(k => {
+    const areaGen = d3.area()
+      .x(d => x(d.year))
+      .y0(y(0))
+      .y1(d => y(d[k]))
+      .curve(d3.curveCatmullRom);
+
+    svg.append('path')
+      .datum(data)
+      .attr('d', areaGen)
+      .attr('fill', color(k))
+      .attr('opacity', 0.6);
+  });
+})();
+
+
+/* ---------------- Chart 7: Interactive Venn ---------------- */
+(function(){
+  const svg=d3.select('#chart7 svg');svg.selectAll('*').remove();
+  const w=svg.node().clientWidth,h=svg.node().clientHeight;
+  const A={cx:w/2-40,cy:h/2,r:55},B={cx:w/2+40,cy:h/2,r:55};
+  svg.append('circle').attr('cx',A.cx).attr('cy',A.cy).attr('r',A.r).attr('fill','#06b6d4').attr('opacity',0.4);
+  svg.append('circle').attr('cx',B.cx).attr('cy',B.cy).attr('r',B.r).attr('fill','#f59e0b').attr('opacity',0.4);
+  const inter=svg.append('path').attr('fill','#7c3aed').attr('opacity',0.35);
+  function intersectionPath(a,b){
+    const d=Math.hypot(a.cx-b.cx,a.cy-b.cy);
+    if(d>a.r+b.r) return '';
+    const alpha=Math.acos((a.r*a.r+d*d-b.r*b.r)/(2*a.r*d));
+    const beta=Math.acos((b.r*b.r+d*d-a.r*a.r)/(2*b.r*d));
+    const t=Math.atan2(b.cy-a.cy,b.cx-a.cx);
+    const p1=[a.cx+a.r*Math.cos(t-alpha),a.cy+a.r*Math.sin(t-alpha)];
+    const p2=[a.cx+a.r*Math.cos(t+alpha),a.cy+a.r*Math.sin(t+alpha)];
+    const p3=[b.cx+b.r*Math.cos(t+beta+Math.PI),b.cy+b.r*Math.sin(t+beta+Math.PI)];
+    const p4=[b.cx+b.r*Math.cos(t-beta+Math.PI),b.cy+b.r*Math.sin(t-beta+Math.PI)];
+    return `M${p1}A${a.r},${a.r} 0 0,1 ${p2}A${b.r},${b.r} 0 0,1 ${p3}A${b.r},${b.r} 0 0,1 ${p4}A${a.r},${a.r} 0 0,1 ${p1}Z`;
+  }
+  inter.attr('d',intersectionPath(A,B));
+  svg.selectAll('circle').on('mouseenter',function(){d3.select(this).attr('opacity',0.65);})
+    .on('mouseleave',function(){d3.select(this).attr('opacity',0.4);});
+})();
+
+/* ---------------- Chart 8: Bars (sort, explode, axes, tooltips) ---------------- */
+(function(){
+  const svg = d3.select('#chart8 svg');
+  svg.selectAll('*').remove();
+  const w = svg.node().clientWidth,
+        h = svg.node().clientHeight,
+        pad = 40;
+
+  // Create tooltip div
+  const tooltip = d3.select('body').append('div')
+    .attr('id', 'bar-tooltip')
+    .style('position', 'absolute')
+    .style('padding', '6px 10px')
+    .style('background', '#111827')
+    .style('color', '#fff')
+    .style('border-radius', '6px')
+    .style('font-size', '12px')
+    .style('pointer-events', 'none')
+    .style('display', 'none')
+    .style('z-index', 999);
+
+  // Data setup
+  let data = d3.range(7).map(i => ({
+    name: 'Item ' + (i + 1),
+    value: Math.random() * 100 + 20
+  }));
+
+  // Scales
+  const x = d3.scaleBand().range([pad, w - pad]).padding(0.2);
+  const y = d3.scaleLinear().range([h - pad, 20]);
+
+  // Axes groups
+  const xAxisG = svg.append('g')
+    .attr('transform', `translate(0,${h - pad})`)
+    .attr('class', 'x-axis');
+  const yAxisG = svg.append('g')
+    .attr('transform', `translate(${pad},0)`)
+    .attr('class', 'y-axis');
+
+  // Render function
+  function render(data){
+    x.domain(data.map(d => d.name));
+    y.domain([0, d3.max(data, d => d.value) * 1.1]);
+
+    // X & Y axes with cm labels
+    const xAxis = d3.axisBottom(x);
+    const yAxis = d3.axisLeft(y)
+      .ticks(6)
+      .tickFormat(d => d + ' cm');
+
+    xAxisG.transition().duration(600).call(xAxis);
+    yAxisG.transition().duration(600).call(yAxis);
+
+    // Bars
+    const bars = svg.selectAll('rect').data(data, d => d.name);
+
+    bars.enter().append('rect')
+      .attr('x', d => x(d.name))
+      .attr('y', y(0))
+      .attr('width', x.bandwidth())
+      .attr('height', 0)
+      .attr('fill', '#2563eb')
+      .on('mouseenter', (event, d) => {
+        tooltip.style('display', 'block')
+          .html(`<strong>${d.name}</strong><br>${d.value.toFixed(1)} cm`);
+        d3.select(event.currentTarget)
+          .attr('fill', '#1e40af'); // darker shade on hover
+      })
+      .on('mousemove', (event) => {
+        tooltip.style('left', (event.pageX + 10) + 'px')
+               .style('top', (event.pageY - 28) + 'px');
+      })
+      .on('mouseleave', (event) => {
+        tooltip.style('display', 'none');
+        d3.select(event.currentTarget)
+          .attr('fill', '#2563eb');
+      })
+      .merge(bars)
+      .transition().duration(800)
+      .attr('x', d => x(d.name))
+      .attr('y', d => y(d.value))
+      .attr('height', d => y(0) - y(d.value));
+
+    bars.exit().remove();
+  }
+
+  // Initial render
+  render(data);
+
+  // Sort button toggle
+  let desc = false;
+  d3.select('#sortBtn').on('click', function(){
+    desc = !desc;
+    data.sort((a,b) => desc ? b.value - a.value : a.value - b.value);
+    d3.select(this).text('Sort: ' + (desc ? 'Asc' : 'Desc'));
+    render(data);
+  });
+
+  // Randomize button
+  d3.select('#randomize').on('click', () => {
+    data.forEach(d => d.value = Math.random() * 100 + 20);
+    render(data);
+  });
+
+  // Click-to-explode animation
+  svg.on('click', e => {
+    const [mx,my] = d3.pointer(e);
+    svg.selectAll('rect').each(function(d){
+      const bx = parseFloat(d3.select(this).attr('x')),
+            bw = parseFloat(d3.select(this).attr('width')),
+            by = parseFloat(d3.select(this).attr('y')),
+            bh = parseFloat(d3.select(this).attr('height'));
+      if(mx > bx && mx < bx + bw && my > by && my < by + bh){
+        d3.select(this)
+          .transition().duration(300)
+          .attr('y', by - 10).attr('height', bh + 10)
+          .transition().duration(400)
+          .attr('y', by).attr('height', bh);
+      }
+    });
+  });
+})();
+
+/* ---------------- Chart 9: Sketch (pen sketch look) ---------------- */
+(function(){
+  const svg = d3.select('#chart9 svg');
+  svg.selectAll('*').remove();
+  const w = svg.node().clientWidth, h = svg.node().clientHeight;
+
+  const cx = w/2, cy = h/2 + 10;
+  const headR = Math.min(w,h)/6;
+  const earR = headR*0.6;
+  const head = {cx: cx, cy: cy, r: headR};
+  const leftEar = {cx: cx - headR*0.8, cy: cy - headR*0.8, r: earR};
+  const rightEar = {cx: cx + headR*0.8, cy: cy - headR*0.8, r: earR};
+
+  function sketchCircle(cx,cy,r,lines=4,points=140,jitter=3){
+    const paths = [];
+    for(let j=0;j<lines;j++){
+      const pts=[];
+      for(let i=0;i<points;i++){
+        const th = (i/points)*Math.PI*2;
+        const jr = r + (Math.random()*2-1)*jitter;
+        const x = cx + jr*Math.cos(th);
+        const y = cy + jr*Math.sin(th);
+        pts.push([x,y]);
+      }
+      paths.push(d3.line().curve(d3.curveCardinalClosed)(pts));
+    }
+    return paths;
+  }
+
+  const groups = [head, leftEar, rightEar];
+  groups.forEach((c,i)=>{
+    const paths = sketchCircle(c.cx, c.cy, c.r, 5, 160, 3.5);
+    paths.forEach((p,k)=>{
+      const path = svg.append('path')
+        .attr('d', p)
+        .attr('fill','none')
+        .attr('stroke','#0f172a')
+        .attr('stroke-width', 1.4)
+        .attr('opacity', 0.55 + Math.random()*0.25)
+        .attr('stroke-linecap','round')
+        .attr('stroke-linejoin','round');
+      const L = path.node().getTotalLength();
+      path.attr('stroke-dasharray', L + ' ' + L)
+        .attr('stroke-dashoffset', L)
+        .transition().delay(i*200 + k*120).duration(1000)
+        .ease(d3.easeQuadOut)
+        .attr('stroke-dashoffset', 0);
+    });
+  });
+
+  for(let i=0;i<30;i++){
+    const x1 = cx - headR*0.6 + Math.random()*headR*1.2;
+    const y1 = cy - headR*0.6 + Math.random()*headR*1.2;
+    const x2 = x1 + 8 + Math.random()*4;
+    const y2 = y1 + 1 + Math.random()*3;
+    svg.append('line')
+      .attr('x1',x1).attr('y1',y1)
+      .attr('x2',x2).attr('y2',y2)
+      .attr('stroke','#111827')
+      .attr('opacity',0.1)
+      .attr('stroke-width',0.8);
+  }
+})();
+</script>
+
+</body>
+</html>

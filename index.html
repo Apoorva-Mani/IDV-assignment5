@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Assignment 5 - Interactive Data Visualizations</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+    <style>
+        /* --- GLOBAL RESET --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* --- DARK THEME BASE --- */
+        body {
+            font-family: "Inter", "Segoe UI", Arial, sans-serif;
+            background: radial-gradient(circle at 25% 0%, #181a1f, #0e1014 60%);
+            color: #e4e4e4;
+            line-height: 1.7;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 1400px;
+            padding: 25px;
+            margin: auto;
+        }
+
+        /* --- GLASS CARD --- */
+        .card {
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 18px;
+            padding: 40px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.35);
+            margin-bottom: 40px;
+            transition: transform .25s ease;
+            position: relative; /* needed for close button positioning */
+            cursor: default;
+        }
+        .card:hover { transform: translateY(-4px); }
+
+        /* --- HEADER --- */
+        .header h1 {
+            font-size: 2.7em;
+            background: linear-gradient(90deg, #8a7dff, #c77dff);
+            -webkit-background-clip: text;
+            color: transparent;
+            font-weight: 800;
+            text-shadow: 0 0 25px rgba(138,125,255,0.25);
+            margin-bottom: 18px;
+        }
+
+        .subtitle { font-size: 1.15em; color: #c9c9c9; }
+
+        /* --- NAVIGATION --- */
+        .nav-menu {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 35px;
+        }
+
+        .nav-menu a {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #2c2f36, #1d1f24);
+            border-radius: 10px;
+            color: #e0e0ff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95em;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: 0.3s ease;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            background: linear-gradient(135deg, #7d5bff, #b05bff);
+            color: #fff;
+            transform: translateY(-3px);
+            box-shadow: 0 0 18px rgba(125,91,255,0.45);
+        }
+
+        /* --- SECTION TITLES --- */
+        .section-title {
+            font-size: 1.9em;
+            margin-bottom: 18px;
+            background: linear-gradient(90deg, #9b7dff, #d57dff);
+            -webkit-background-clip: text;
+            color: transparent;
+            font-weight: 700;
+        }
+
+        .assignment-header p {
+            color: #bfbfbf;
+            font-size: 1.1em;
+            margin-top: 5px;
+        }
+
+        iframe {
+            width: 100%;
+            border-radius: 12px;
+            border: none;
+            background: #000;
+            display: block;
+        }
+
+        /* tiny usage hint */
+        .hint {
+            margin-top: 12px;
+            color: #b7b7b7;
+            font-size: 0.95em;
+        }
+
+        /* --- FULLSCREEN CARD MODE --- */
+        .card.fullscreen {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 40px !important;
+            border-radius: 0 !important;
+            z-index: 9999 !important;
+            overflow-y: auto !important;
+            background: rgba(25, 25, 30, 0.98) !important;
+            backdrop-filter: blur(12px);
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .card.fullscreen:hover { transform: none; } /* avoid translateY while fullscreen */
+
+        /* make iframe taller in fullscreen so content is visible */
+        .card.fullscreen iframe {
+            height: calc(100vh - 120px) !important;
+            border-radius: 8px !important;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.995); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Close button styling */
+        .fullscreen-close {
+            position: absolute;
+            top: 18px;
+            right: 22px;
+            font-size: 28px;
+            color: #fff;
+            cursor: pointer;
+            z-index: 10000;
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 8px;
+            transition: 0.12s;
+            user-select: none;
+        }
+        .fullscreen-close:hover { background: rgba(255,255,255,0.22); transform: scale(1.03); }
+
+        /* focus style for keyboard usage */
+        .card:focus { outline: 3px solid rgba(125,91,255,0.18); }
+
+        @media(max-width: 768px) {
+            .card { padding: 25px; }
+            .header h1 { font-size: 2.1em; }
+        }
+    </style>
+
+</head>
+<body>
+
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="card header" tabindex="-1">
+        <h1>Assignment 5: Integrated Data Visualizations</h1>
+        <p style="color:#909090; margin-top:10px;">Created by: Apoorva Mani — Assignment Portfolio 2025</p>
+    </div>
+
+    <!-- NAVIGATION -->
+    <div class="nav-menu">
+        <a href="#overview">Overview</a>
+        <a href="#assignment1">Assignment 1</a>
+        <a href="#assignment2">Assignment 2</a>
+        <a href="#assignment3">Assignment 3</a>
+        <a href="#assignment4">Assignment 4</a>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="card" id="overview" tabindex="-1">
+        <h2 class="section-title">Integration Overview</h2>
+        <p>This portfolio consolidates four separate interactive data visualization assignments into a unified interface. It features consistent styling, a dark theme, refined UI/UX patterns, and improved modular layout.</p>
+
+        <h3 style="margin-top:25px; color:#caaeff;">How the Assignments Were Unified</h3>
+        <ul style="margin-left:25px;">
+            <li>Refined interface using a dark glassmorphic theme</li>
+            <li>Unified visual identity using gradient typography & soft shadows</li>
+            <li>Improved iframe embedding & consistency across sections</li>
+            <li>Smooth-scroll deep linking navigation</li>
+            <li>Scoped JavaScript + conflict-free CSS architecture</li>
+        </ul>
+
+        <h3 style="margin-top:25px; color:#caaeff;">Most Challenging: Assignment 4</h3>
+        <p>Due to its radial D3 structure, animations, and large data size, Assignment 4 required restructuring container logic and converting fixed elements to relative layouts to integrate cleanly.</p>
+        
+		<h3 style="margin-top:25px; color:#caaeff;">Integration Challenges & Solutions</h3>
+                <ul style="margin-left:25px;">
+                    <li><strong>Hardest to Integrate: Assignment 4 (AI Defense Arena)</strong> - Required special height adjustments 
+                    and careful iframe sizing to accommodate the large radial visualization and interactive matrix view</li>
+                    <li><strong>Challenge 1:</strong> Maintaining responsive behavior across all assignments while preventing horizontal scrolling</li>
+                    <li><strong>Solution 1:</strong> Custom iframe container sizing with media queries for mobile optimization</li>
+                    <li><strong>Challenge 2:</strong> CSS conflicts between the main page and embedded assignments</li>
+                    <li><strong>Solution 2:</strong> Iframe isolation ensures each assignment's styles remain independent</li>
+                    <li><strong>Challenge 3:</strong> Consistent visual theme across disparate assignment designs</li>
+                    <li><strong>Solution 3:</strong> Unified dark theme with gradient accents and cohesive card-based layout</li>
+                </ul>
+		
+		
+	</div>
+
+    <!-- ASSIGNMENT CARDS -->
+    <div class="card" id="assignment1" tabindex="0">
+        <h2 class="section-title">📊 Assignment 1: API-Driven PSI Table</h2>
+        <p>Real-time PSI readings fetched dynamically from Singapore’s environmental API.</p>
+        <iframe src="idv1.html" height="800" title="Assignment 1"></iframe>
+        <div class="hint">Double-click the card header or iframe border to fullscreen — or click this card to focus and press <strong>F</strong>. Press <strong>Esc</strong> to exit.</div>
+    </div>
+
+    <div class="card" id="assignment2" tabindex="0">
+        <h2 class="section-title">🎨 Assignment 2: SVG Transformations</h2>
+        <p>Mirror, rotate, squeeze, grayscale — all using SVG + CSS transformations.</p>
+        <iframe src="idv2.html" height="1200" title="Assignment 2"></iframe>
+        <div class="hint">Double-click the card header or iframe border to fullscreen — or click this card to focus and press <strong>F</strong>. Press <strong>Esc</strong> to exit.</div>
+    </div>
+
+    <div class="card" id="assignment3" tabindex="0">
+        <h2 class="section-title">📈 Assignment 3: Interactive D3 Chart Suite</h2>
+        <p>Nine dynamic visualizations demonstrating animation, transitions, and user interaction.</p>
+        <iframe src="idv3.html" height="1400" title="Assignment 3"></iframe>
+        <div class="hint">Double-click the card header or iframe border to fullscreen — or click this card to focus and press <strong>F</strong>. Press <strong>Esc</strong> to exit.</div>
+    </div>
+
+    <div class="card" id="assignment4" tabindex="0">
+        <h2 class="section-title">⚔️ Assignment 4: AI Defense Battle Arena</h2>
+        <p>Radial visualization mapping adversarial attacks against AI defenses.</p>
+        <iframe src="idv4.html" height="1400" title="Assignment 4"></iframe>
+        <div class="hint">Double-click the card header or iframe border to fullscreen — or click this card to focus and press <strong>F</strong>. Press <strong>Esc</strong> to exit.</div>
+    </div>
+
+</div>
+
+<script>
+    // Smooth scroll
+    document.querySelectorAll('.nav-menu a').forEach(link => {
+        link.addEventListener('click', e => {
+            e.preventDefault();
+            const section = document.querySelector(link.getAttribute('href'));
+            section.scrollIntoView({ behavior: "smooth" });
+            // focus the section for keyboard usage
+            section.focus({preventScroll:true});
+        });
+    });
+
+    // Highlight active link
+    window.addEventListener('scroll', () => {
+        const sections = document.querySelectorAll('.card[id]');
+        const navLinks = document.querySelectorAll('.nav-menu a');
+        let current = "";
+        sections.forEach(sec => {
+            if (scrollY >= sec.offsetTop - 120) current = sec.id;
+        });
+
+        navLinks.forEach(a => {
+            a.classList.remove('active');
+            if (a.getAttribute('href') === "#" + current) {
+                a.classList.add('active');
+            }
+        });
+    });
+
+    /* --- FULLSCREEN / FOCUS / ESC HANDLING --- */
+    function removeFullscreenFromAll() {
+        document.querySelectorAll('.card.fullscreen').forEach(c => {
+            c.classList.remove('fullscreen');
+            const closeBtn = c.querySelector('.fullscreen-close');
+            if (closeBtn) closeBtn.remove();
+            // return focus to the card so keyboard controls remain coherent
+            c.focus({preventScroll:true});
+        });
+    }
+
+    function makeCloseButtonFor(card) {
+        // don't add another if exists
+        if (card.querySelector('.fullscreen-close')) return;
+        const closeBtn = document.createElement('div');
+        closeBtn.className = "fullscreen-close";
+        closeBtn.textContent = "×";
+        closeBtn.title = "Close fullscreen (Esc)";
+        closeBtn.onclick = (ev) => {
+            ev.stopPropagation();
+            card.classList.remove('fullscreen');
+            closeBtn.remove();
+            card.focus({preventScroll:true});
+        };
+        card.appendChild(closeBtn);
+    }
+
+    // Toggle fullscreen for a given card
+    function toggleFullscreen(card) {
+        const isFs = card.classList.contains('fullscreen');
+        // close others
+        removeFullscreenFromAll();
+        if (!isFs) {
+            card.classList.add('fullscreen');
+            makeCloseButtonFor(card);
+            // ensure focused so keyboard esc works
+            card.focus({preventScroll:true});
+            // scroll to top of the card (useful on small screens)
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            // already handled by removeFullscreenFromAll
+        }
+    }
+
+    // attach handlers to cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        // dblclick on the card container (header or empty area)
+        card.addEventListener('dblclick', (e) => {
+            // if dblclick happened on close button, ignore
+            if (e.target.classList && e.target.classList.contains('fullscreen-close')) return;
+            toggleFullscreen(card);
+        });
+
+        // make card focusable and support keyboard 'F' toggling
+        card.addEventListener('click', () => {
+            card.focus({preventScroll:true});
+        });
+
+        // allow Enter to toggle too (accessibility)
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') toggleFullscreen(card);
+        });
+
+        // Attach dblclick to that card's iframe element (if any)
+        const iframe = card.querySelector('iframe');
+        if (iframe) {
+            // dblclick on the iframe element (this fires when the user double-clicks the iframe element border or content area sometimes,
+            // but not always if the content handles events). This increases chance of toggling.
+            iframe.addEventListener('dblclick', (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                toggleFullscreen(card);
+            });
+
+            // Also, clicking the iframe sets focus on the parent card (so user can press F after interacting)
+            iframe.addEventListener('click', () => {
+                card.focus({preventScroll:true});
+            });
+        }
+    });
+
+    // Global keyboard handler: F to fullscreen focused card, Esc to exit fullscreen
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            removeFullscreenFromAll();
+            return;
+        }
+        // only consider 'f' or 'F' when target is body or a focused card (avoid interfering with input fields)
+        const active = document.activeElement;
+        if (e.key.toLowerCase() === 'f') {
+            // if a card is focused, toggle that one
+            if (active && active.classList && active.classList.contains('card')) {
+                toggleFullscreen(active);
+            } else {
+                // if none focused, try to find the first visible assignment card
+                const assignmentCard = document.querySelector('.card#assignment1, .card#assignment2, .card#assignment3, .card#assignment4');
+                if (assignmentCard) toggleFullscreen(assignmentCard);
+            }
+        }
+    });
+
+    // Close fullscreen when user clicks the overlayed page outside a fullscreen card (optional)
+    document.addEventListener('click', (e) => {
+        // if there's a fullscreen card and the click target is outside it, close
+        const fs = document.querySelector('.card.fullscreen');
+        if (!fs) return;
+        if (!fs.contains(e.target)) {
+            removeFullscreenFromAll();
+        }
+    }, true); // capture phase so clicks inside iframe border that reach parent are processed early
+
+</script>
+
+</body>
+</html>
